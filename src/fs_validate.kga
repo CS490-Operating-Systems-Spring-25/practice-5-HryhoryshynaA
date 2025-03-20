@@ -257,10 +257,6 @@ label check_first_line
     cpu_exec
     jump_if_not label:wrong_format
 
-    write "first line of the partition format is correct!" to DISPLAY_BUFFER
-    write COLOR_GREEN to DISPLAY_COLOR
-    write OP_DISPLAY to REG_OP
-    cpu_exec
 
     var current_file_line
     //increase start_partition by one and save it to current_file_line
