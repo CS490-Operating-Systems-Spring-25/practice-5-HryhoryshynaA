@@ -1,0 +1,377 @@
+var disk_name
+var partition_name
+
+var partion_names_line
+write 4 to var:partion_names_line //on line 4 partition names start
+
+label ask_input
+    write "Enter the disk name: " to DISPLAY_BUFFER
+    write "" to DISPLAY_COLOR
+    write OP_DISPLAY to REG_OP
+    cpu_exec
+
+    write OP_READ_INPUT to REG_OP
+    write KEYBOARD_READ_LINE to REG_A
+    cpu_exec
+    copy KEYBOARD_BUFFER to var:disk_name
+
+    write "Enter the partition name: " to DISPLAY_BUFFER
+    write "" to DISPLAY_COLOR
+    write OP_DISPLAY to REG_OP
+    cpu_exec
+
+    write OP_READ_INPUT to REG_OP
+    write KEYBOARD_READ_LINE to REG_A
+    cpu_exec
+    copy KEYBOARD_BUFFER to var:partition_name
+
+    jump label:partition_exist_checker
+
+label partition_exist_checker
+    var current_line
+    var curent_partition_name
+
+    copy var:disk_name to REG_A
+    copy var:partion_names_line to REG_B
+    write OP_READ_BLOCK to REG_OP
+    cpu_exec
+    copy REG_RES to var:current_line
+
+    copy var:current_line to REG_A
+    write "END_PARTITION_TABLE" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:partition_not_found
+
+    //getting the name
+    copy var:current_line to REG_A
+    write "2" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to var:curent_partition_name
+
+    copy var:partition_name to REG_A
+    copy var:curent_partition_name to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:check_format
+
+    copy var:partion_names_line to REG_A
+    write OP_INCR to REG_OP
+    cpu_exec
+    copy REG_RES to var:partion_names_line
+
+    jump label:partition_exist_checker
+
+label check_format
+    //proceeding with checking if header look correclty
+    copy var:current_line to DISPLAY_BUFFER
+    write COLOR_BLUE to DISPLAY_COLOR
+    write OP_DISPLAY to REG_OP
+    cpu_exec
+
+    //cheking if first column is NAME
+    copy var:current_line to REG_A
+    write "1" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write "NAME" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //skipping checking second since it is name and I have already checked
+
+    //checking if third column is START_BLOCK
+    copy var:current_line to REG_A
+    write "3" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write "START_BLOCK" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    var start_partition
+    var end_partition
+
+    //chekcing if start of block (4h column) is a number
+    copy var:current_line to REG_A
+    write "4" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    copy REG_RES to var:start_partition
+    cpu_exec
+    copy var:start_partition to REG_A
+    write OP_IS_NUM to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //checking if fifth column is END_BLOCK
+    copy var:current_line to REG_A
+    write "5" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write "END_BLOCK" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //checking if end of block (6th column) is a number
+    copy var:current_line to REG_A
+    write "6" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    copy REG_RES to var:end_partition
+    cpu_exec
+    copy var:end_partition to REG_A
+    write OP_IS_NUM to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //checking if start block number is smaller than end block number
+    copy var:start_partition to REG_A
+    copy var:end_partition to REG_B
+    write OP_CMP_LT to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    write "Header format is correct!" to DISPLAY_BUFFER
+    write COLOR_GREEN to DISPLAY_COLOR
+    write OP_DISPLAY to REG_OP
+    cpu_exec
+
+    jump label:check_first_line
+
+
+label check_first_line
+    var partion_line_start
+    copy var:disk_name to REG_A
+    copy var:start_partition to REG_B
+    write OP_READ_BLOCK to REG_OP
+    cpu_exec
+    copy REG_RES to var:partion_line_start
+    
+    //debug print
+    copy var:partion_line_start to DISPLAY_BUFFER
+    write COLOR_BLUE to DISPLAY_COLOR
+    write OP_DISPLAY to REG_OP
+    cpu_exec
+
+    //cheking if first column is FS_HEADER
+    copy var:partion_line_start to REG_A
+    write "1" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write "FS_HEADER" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //cheking if second column is kagu_fs
+    copy var:partion_line_start to REG_A
+    write "2" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write "kagu_fs" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //checking if third column is FIRST_USABLE_BLOCK
+    copy var:partion_line_start to REG_A
+    write "3" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write "FIRST_USABLE_BLOCK" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    var first_usable_block
+    var last_usable_block
+
+    //chekcing if first usable block (4h column) is a number
+    copy var:partion_line_start to REG_A
+    write "4" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    copy REG_RES to var:first_usable_block
+    cpu_exec
+    copy var:first_usable_block to REG_A
+    write OP_IS_NUM to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //checking if fifth column is LAST_USABLE_BLOCK
+    copy var:partion_line_start to REG_A
+    write "5" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write "LAST_USABLE_BLOCK" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //checking if end of block (6th column) is a number
+    copy var:partion_line_start to REG_A
+    write "6" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    copy REG_RES to var:last_usable_block
+    cpu_exec
+    copy var:last_usable_block to REG_A
+    write OP_IS_NUM to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //checking if first usable block is smaller than last usable block
+    copy var:first_usable_block to REG_A
+    copy var:last_usable_block to REG_B
+    write OP_CMP_LT to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //check if first usable block belongs to partition (more than start partition)
+    copy var:start_partition to REG_A
+    copy var:first_usable_block to REG_B
+    write OP_CMP_LT to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //check if first usable block belongs to partition (less than last partition)
+    copy var:first_usable_block to REG_A
+    copy var:end_partition to REG_B
+    write OP_CMP_LT to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    //check if last usable block belongs to partition (less or equal than end block)
+    copy var:last_usable_block to REG_A
+    copy var:end_partition to REG_B
+    write OP_CMP_LE to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    write "first line of the partition format is correct!" to DISPLAY_BUFFER
+    write COLOR_GREEN to DISPLAY_COLOR
+    write OP_DISPLAY to REG_OP
+    cpu_exec
+
+    var current_file_line
+    //increase start_partition by one and save it to current_file_line
+    copy var:start_start_partition to REG_A
+    write OP_INCR to REG_OP
+    cpu_exec
+    copy REG_RES to var:current_file_line
+
+    jump label:check_files_format
+
+label check_files_format
+    jump check_file_header_format
+
+    copy var:current_file_line to REG_A
+    write OP_INCR to REG_OP
+    cpu_exec
+    copy REG_RES to var:current_file_line
+
+label check_file_header_format
+    var current_file_header
+    copy var:disk_name to REG_A
+    copy var:current_file_line to REG_B
+    write OP_READ_BLOCK to REG_OP
+    cpu_exec
+    copy REG_RES to var:current_file_header
+
+    copy var:current_file_header to REG_A
+    write "" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:check_headerend_is //all files had correct format
+
+    //checking file header format
+
+    //check if column 2 3 and 4 between 0 and 7 (assuming that all of them are numbers)
+    copy var:current_file_header to REG_A
+    write "2" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write 7 to REG_B
+    write OP_CMP_LE to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+    write 0 to REG_A
+    copy REG_RES to REG_B
+    write OP_CMP_LE to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    copy var:current_file_header to REG_A
+    write "3" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write 7 to REG_B
+    write OP_CMP_LE to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+    write 0 to REG_A
+    copy REG_RES to REG_B
+    write OP_CMP_LE to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    copy var:current_file_header to REG_A
+    write "4" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to REG_A
+    write 7 to REG_B
+    write OP_CMP_LE to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+    write 0 to REG_A
+    copy REG_RES to REG_B
+    write OP_CMP_LE to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+
+    
+
+label partition_not_found
+    write "Partition wan't found" to DISPLAY_BUFFER
+    write COLOR_RED to DISPLAY_COLOR
+    write OP_DISPLAY_LN to REG_OP
+    cpu_exec
+
+    write OP_HALT to REG_OP
+    cpu_exec
+
+label wrong_format
+    write "Doesn't follow the format" to DISPLAY_BUFFER
+    write COLOR_RED to DISPLAY_COLOR
+    write OP_DISPLAY_LN to REG_OP
+    cpu_exec
+
+    write OP_HALT to REG_OP
+    cpu_exec
