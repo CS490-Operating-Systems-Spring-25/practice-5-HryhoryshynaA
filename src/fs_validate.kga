@@ -351,27 +351,110 @@ label check_file_header_format
     write OP_CMP_LE to REG_OP
     cpu_exec
     jump_if_not label:wrong_format
-
-    var block_index
+    
+    var block_value1
+    var block_index1
+    write 8 to var:block_index1
     copy var:current_file_header to REG_A
-    write "8" to REG_B
+    copy var:block_index1 to REG_B
     write " " to REG_C
     write OP_GET_COLUMN to REG_OP
     cpu_exec
-    copy REG_RES to var:block_index
+    copy REG_RES to var:block_value1
+
+    var block_value2
+    var block_index2
+    write 9 to var:block_index2
+    copy var:current_file_header to REG_A
+    write var:block_index2 to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to var:block_value2
 
     jump label:check_block_numbers
 
 
 label check_block_numbers
-    copy var:block_index to REG_A
+    copy var:block_value1 to REG_A
     write "" to REG_B
     write OP_CMP_EQ to REG_OP
     cpu_exec
-
+    //we jump to next file header if everthing is correct
     jump_if label:check_files_format
-    
 
+    copy var:block_value2 to REG_A
+    write "" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:check_files_format
+
+    copy var:block_value1 to REG_A
+    copy var:block_value2 to REG_B
+    write OP_CMP_LT to REG_OP
+    cpu_exec
+    jump_if_not label:wrong_format
+
+    copy var:block_index1 to REG_A
+    write 2 to REG_B
+    write OP_ADD to REG_OP
+    cpu_exec
+    copy REG_RES to var:block_index1
+
+    copy var:block_index2 to REG_A
+    write 2 to REG_B
+    write OP_ADD to REG_OP
+    cpu_exec
+    copy REG_RES to var:block_index1
+
+    copy var:current_file_header to REG_A
+    copy var:block_index1 to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to var:block_value1
+
+    copy var:current_file_header to REG_A
+    write var:block_index2 to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to var:block_value2
+
+    jump label:check_block_numbers
+
+
+label check_headerend_is
+    var value
+    copy var:first_usable_block to REG_A
+    write OP_DECR to REG_OP
+    cpu_exec
+    copy REG_RES to var:first_usable_block
+
+    copy var:disk_name to REG_A
+    copy var:first_usable_block to REG_B
+    write OP_READ_BLOCK to REG_OP
+    cpu_exec
+    copy REG_RES to var:value
+
+    copy var:value to REG_A
+    write "FS_HEADER_END" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+
+    jump_if_not label:wrong_format
+
+    jump label:correct_format_message
+
+
+label correct_format_message
+    write "Partition has the correct format" to DISPLAY_BUFFER
+    write COLOR_GREEN to DISPLAY_COLOR
+    write OP_DISPLAY_LN to REG_OP
+    cpu_exec
+
+    write OP_HALT to REG_OP
+    cpu_exec
 label partition_not_found
     write "Partition wan't found" to DISPLAY_BUFFER
     write COLOR_RED to DISPLAY_COLOR
