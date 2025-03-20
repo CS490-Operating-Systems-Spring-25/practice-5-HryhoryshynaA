@@ -68,7 +68,7 @@ label check_format
     //proceeding with checking if header look correclty
     copy var:current_line to DISPLAY_BUFFER
     write COLOR_BLUE to DISPLAY_COLOR
-    write OP_DISPLAY to REG_OP
+    write OP_DISPLAY_LN to REG_OP
     cpu_exec
 
     //cheking if first column is NAME
@@ -105,8 +105,8 @@ label check_format
     write "4" to REG_B
     write " " to REG_C
     write OP_GET_COLUMN to REG_OP
-    copy REG_RES to var:start_partition
     cpu_exec
+    copy REG_RES to var:start_partition
     copy var:start_partition to REG_A
     write OP_IS_NUM to REG_OP
     cpu_exec
@@ -129,8 +129,8 @@ label check_format
     write "6" to REG_B
     write " " to REG_C
     write OP_GET_COLUMN to REG_OP
-    copy REG_RES to var:end_partition
     cpu_exec
+    copy REG_RES to var:end_partition
     copy var:end_partition to REG_A
     write OP_IS_NUM to REG_OP
     cpu_exec
@@ -209,8 +209,8 @@ label check_first_line
     write "4" to REG_B
     write " " to REG_C
     write OP_GET_COLUMN to REG_OP
-    copy REG_RES to var:first_usable_block
     cpu_exec
+    copy REG_RES to var:first_usable_block
     copy var:first_usable_block to REG_A
     write OP_IS_NUM to REG_OP
     cpu_exec
@@ -233,8 +233,8 @@ label check_first_line
     write "6" to REG_B
     write " " to REG_C
     write OP_GET_COLUMN to REG_OP
-    copy REG_RES to var:last_usable_block
     cpu_exec
+    copy REG_RES to var:last_usable_block
     copy var:last_usable_block to REG_A
     write OP_IS_NUM to REG_OP
     cpu_exec
@@ -275,7 +275,7 @@ label check_first_line
 
     var current_file_line
     //increase start_partition by one and save it to current_file_line
-    copy var:start_start_partition to var:current_file_line
+    copy var:start_partition to var:current_file_line
 
     jump label:check_files_format
 
@@ -285,7 +285,7 @@ label check_files_format
     cpu_exec
     copy REG_RES to var:current_file_line
 
-    jump check_file_header_format
+    jump label:check_file_header_format
 
 label check_file_header_format
     var current_file_header
@@ -366,7 +366,7 @@ label check_file_header_format
     var block_index2
     write 9 to var:block_index2
     copy var:current_file_header to REG_A
-    write var:block_index2 to REG_B
+    copy var:block_index2 to REG_B
     write " " to REG_C
     write OP_GET_COLUMN to REG_OP
     cpu_exec
@@ -389,6 +389,16 @@ label check_block_numbers
     cpu_exec
     jump_if label:check_files_format
 
+    copy var:block_value1 to DISPLAY_BUFFER
+    write COLOR_BLUE to DISPLAY_COLOR
+    write OP_DISPLAY_LN to REG_OP
+    cpu_exec
+
+    copy var:block_value2 to DISPLAY_BUFFER
+    write COLOR_YELLOW to DISPLAY_COLOR
+    write OP_DISPLAY_LN to REG_OP
+    cpu_exec
+
     copy var:block_value1 to REG_A
     copy var:block_value2 to REG_B
     write OP_CMP_LT to REG_OP
@@ -405,7 +415,7 @@ label check_block_numbers
     write 2 to REG_B
     write OP_ADD to REG_OP
     cpu_exec
-    copy REG_RES to var:block_index1
+    copy REG_RES to var:block_index2
 
     copy var:current_file_header to REG_A
     copy var:block_index1 to REG_B
@@ -415,7 +425,7 @@ label check_block_numbers
     copy REG_RES to var:block_value1
 
     copy var:current_file_header to REG_A
-    write var:block_index2 to REG_B
+    copy var:block_index2 to REG_B
     write " " to REG_C
     write OP_GET_COLUMN to REG_OP
     cpu_exec
