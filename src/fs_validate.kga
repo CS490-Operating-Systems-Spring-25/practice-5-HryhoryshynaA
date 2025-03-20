@@ -143,11 +143,6 @@ label check_format
     cpu_exec
     jump_if_not label:wrong_format
 
-    write "Header format is correct!" to DISPLAY_BUFFER
-    write COLOR_GREEN to DISPLAY_COLOR
-    write OP_DISPLAY to REG_OP
-    cpu_exec
-
     jump label:check_first_line
 
 
@@ -158,12 +153,6 @@ label check_first_line
     write OP_READ_BLOCK to REG_OP
     cpu_exec
     copy REG_RES to var:partion_line_start
-    
-    //debug print
-    copy var:partion_line_start to DISPLAY_BUFFER
-    write COLOR_BLUE to DISPLAY_COLOR
-    write OP_DISPLAY to REG_OP
-    cpu_exec
 
     //cheking if first column is FS_HEADER
     copy var:partion_line_start to REG_A
@@ -388,16 +377,6 @@ label check_block_numbers
     write OP_CMP_EQ to REG_OP
     cpu_exec
     jump_if label:check_files_format
-
-    copy var:block_value1 to DISPLAY_BUFFER
-    write COLOR_BLUE to DISPLAY_COLOR
-    write OP_DISPLAY_LN to REG_OP
-    cpu_exec
-
-    copy var:block_value2 to DISPLAY_BUFFER
-    write COLOR_YELLOW to DISPLAY_COLOR
-    write OP_DISPLAY_LN to REG_OP
-    cpu_exec
 
     copy var:block_value1 to REG_A
     copy var:block_value2 to REG_B
