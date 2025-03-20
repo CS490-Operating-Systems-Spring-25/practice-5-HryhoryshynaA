@@ -275,20 +275,17 @@ label check_first_line
 
     var current_file_line
     //increase start_partition by one and save it to current_file_line
-    copy var:start_start_partition to REG_A
-    write OP_INCR to REG_OP
-    cpu_exec
-    copy REG_RES to var:current_file_line
+    copy var:start_start_partition to var:current_file_line
 
     jump label:check_files_format
 
 label check_files_format
-    jump check_file_header_format
-
     copy var:current_file_line to REG_A
     write OP_INCR to REG_OP
     cpu_exec
     copy REG_RES to var:current_file_line
+
+    jump check_file_header_format
 
 label check_file_header_format
     var current_file_header
@@ -355,7 +352,24 @@ label check_file_header_format
     cpu_exec
     jump_if_not label:wrong_format
 
+    var block_index
+    copy var:current_file_header to REG_A
+    write "8" to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to var:block_index
 
+    jump label:check_block_numbers
+
+
+label check_block_numbers
+    copy var:block_index to REG_A
+    write "" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+
+    jump_if label:check_files_format
     
 
 label partition_not_found
