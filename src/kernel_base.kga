@@ -65,6 +65,9 @@ cpu_exec
     var catStr
     write "cat" to var:catStr
 
+    var incrementStr
+    write "increment" to var:incrementStr
+
 label kernel_start
     // Display prompt to enter the value:
     copy var:sys_work_dir to DISPLAY_BUFFER
@@ -122,6 +125,12 @@ label kernel_start
     cpu_exec
     jump_if label:cat_command
 
+    copy var:parsedStr to REG_A
+    copy var:incrementStr to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:increment_command
+
     jump label:kernel_start
 
 label cat_command
@@ -178,6 +187,103 @@ label cat_command
         copy PROGRAM_COUNTER to var:sys_return
         jump label:sys_fs_close
         jump label:kernel_start
+
+
+label increment_command
+    copy var:parsedArg1 to REG_A
+    write "" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:kernel_start
+
+    //here I open the file
+    var increment_fd
+    copy var:parsedArg1 to REG_A
+    copy PROGRAM_COUNTER to var:sys_return
+    jump label:sys_fs_open
+    jump_err label:kernel_start
+    copy REG_RES to var:increment_fd
+
+    copy var:increment_fd to REG_A
+    copy PROGRAM_COUNTER to var:sys_return
+    jump label:sys_fs_descriptor_info
+    write "File descriptor info(name disk fileHeaderBlock fileSize): " to DISPLAY_BUFFER
+    write COLOR_CYAN to DISPLAY_COLOR
+    write OP_DISPLAY to REG_OP
+    cpu_exec
+    copy REG_RES to DISPLAY_BUFFER
+    write OP_DISPLAY_LN to REG_OP
+    cpu_exec
+
+    // Read it line by line and get first character
+    var increment_command_counter
+    write 1 to var:increment_command_counter
+    var current_line
+    label increment_command_loop
+        copy var:increment_fd to REG_A
+        copy var:increment_command_counter to REG_B
+        copy PROGRAM_COUNTER to var:sys_return
+        jump label:sys_fs_read
+        jump_err label:increment_close
+        copy REG_RES to var:current_line
+
+        var first_character
+        
+        copy var:current_line to REG_A
+        write "1" to REG_B
+        write " " to REG_C
+        write OP_GET_COLUMN to REG_OP
+        cpu_exec
+        copy REG_RES to var:first_character
+
+        copy var:first_character to REG_A
+        write OP_IS_NUM to REG_OP
+        cpu_exec
+
+        jump_if label:increment_first
+
+        copy var:increment_command_counter to REG_A
+        write OP_INCR to REG_OP
+        cpu_exec
+        copy REG_RES to var:increment_command_counter
+
+        jump label:increment_command_loop
+
+        label increment_first
+            var new_line
+            copy var:first_character to REG_A
+            write OP_INCR to REG_OP
+            cpu_exec
+            copy REG_RES to var:first_character
+
+            copy var:current_line to REG_A
+            write "1" to REG_B
+            write " " to REG_C
+            copy var:first_character to REG_D
+            write OP_REPLACE_COLUMN to REG_OP
+            cpu_exec
+            copy REG_RES to var:new_line
+
+            copy var:increment_fd to REG_A
+            copy var:increment_command_counter to REG_B
+            copy var:new_line to REG_C
+            copy PROGRAM_COUNTER to var:sys_return
+            jump label:sys_fs_write
+            jump_err label:increment_close
+
+            copy var:increment_command_counter to REG_A
+            write OP_INCR to REG_OP
+            cpu_exec
+            copy REG_RES to var:increment_command_counter
+
+            jump label:increment_command_loop
+
+        label increment_close
+            copy var:increment_fd to REG_A
+            copy PROGRAM_COUNTER to var:sys_return
+            jump label:sys_fs_close
+            jump label:kernel_start
+
 
 
 label kernel_end
