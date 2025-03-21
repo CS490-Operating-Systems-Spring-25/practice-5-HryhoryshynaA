@@ -357,8 +357,51 @@ label check_file_header_format
     cpu_exec
     copy REG_RES to var:block_value2
 
-    jump label:check_block_numbers
+    var number_of_blocks
+    write 0 to var:number_of_blocks
+    var block_index_check
+    copy var:block_index1 to var:block_index_check
+    jump label:calculate_number_blocks
 
+label calculate_number_blocks
+    copy var:current_file_header to REG_A
+    copy var:block_index_check to REG_B
+    write " " to REG_C
+    write OP_GET_COLUMN to REG_OP
+    cpu_exec
+
+    copy REG_RES to REG_A
+    write "" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:check_pair_even
+
+    copy var:number_of_blocks to REG_A
+    write OP_INCR to REG_OP
+    cpu_exec
+    copy REG_RES to var:number_of_blocks
+
+    copy var:block_index_check to REG_A
+    write OP_INCR to REG_OP
+    cpu_exec
+    copy REG_RES to var:block_index_check
+
+    jump label:calculate_number_blocks
+
+label check_pair_even
+    copy var:number_of_blocks to REG_A
+    write 2 to REG_B
+    write OP_MOD to REG_OP
+    cpu_exec
+
+    copy REG_RES to REG_A
+    write 0 to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+
+    jump_if_not label:wrong_format
+
+    jump label:check_block_numbers
 
 label check_block_numbers
     copy var:block_value1 to REG_A
